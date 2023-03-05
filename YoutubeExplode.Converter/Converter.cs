@@ -54,6 +54,23 @@ internal partial class Converter
         for (var i = 0; i < streamInputs.Count + subtitleInputs.Count; i++)
             arguments.Add("-map").Add(i);
 
+        // Stream Names
+        int videoStreamNumber = 0;
+        int audioStreamNumber = 0;
+        foreach (StreamInput streamInput in streamInputs)
+        {
+            if (streamInput.Info is VideoOnlyStreamInfo videoInfo)
+            {
+                arguments.Add($"-metadata:s:v:{videoStreamNumber}").Add("title=" + videoInfo.VideoQuality.Label);
+                videoStreamNumber++;
+            }
+            else if (streamInput.Info is AudioOnlyStreamInfo audioInfo)
+            {
+                arguments.Add($"-metadata:s:a:{audioStreamNumber}").Add("title=" + audioInfo.Bitrate.ToString());
+                audioStreamNumber++;
+            }
+        }
+
         // Avoid transcoding if possible
         if (streamInputs.All(s => s.Info.Container == container))
         {
@@ -177,8 +194,8 @@ internal partial class Converter
         if (!streamInfos.Any())
             throw new InvalidOperationException("No streams provided.");
 
-        if (streamInfos.Count > 2)
-            throw new InvalidOperationException("Too many streams provided.");
+        //if (streamInfos.Count > 2)
+        //    throw new InvalidOperationException("Too many streams provided.");
 
         var progressMuxer = progress?.Pipe(p => new ProgressMuxer(p));
         var streamDownloadProgress = progressMuxer?.CreateInput();
