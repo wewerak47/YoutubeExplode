@@ -7,7 +7,7 @@ using YoutubeExplode.Utils.Extensions;
 
 namespace YoutubeExplode.Utils;
 
-internal static class UriEx
+internal static class UrlEx
 {
     private static IEnumerable<KeyValuePair<string, string>> EnumerateQueryParameters(string url)
     {
@@ -15,7 +15,7 @@ internal static class UriEx
             ? url.SubstringAfter("?")
             : url;
 
-        foreach (var parameter in query.Split("&"))
+        foreach (var parameter in query.Split('&'))
         {
             var key = WebUtility.UrlDecode(parameter.SubstringUntil("="));
             var value = WebUtility.UrlDecode(parameter.SubstringAfter("="));

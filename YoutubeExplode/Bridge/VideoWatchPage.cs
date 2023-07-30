@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -16,11 +17,24 @@ internal partial class VideoWatchPage
         _content.QuerySelector("meta[property=\"og:url\"]") is not null
     );
 
+    public DateTimeOffset? UploadDate => Memo.Cache(this, () =>
+        _content
+            .QuerySelector("meta[itemprop=\"datePublished\"]")?
+            .GetAttribute("content")?
+            .NullIfWhiteSpace()?
+            .ParseDateTimeOffsetOrNull(new[] { @"yyyy-MM-dd" })
+    );
+
     public long? LikeCount => Memo.Cache(this, () =>
         _content
             .Source
             .Text
-            .Pipe(s => Regex.Match(s, @"""label""\s*:\s*""([\d,\.]+) likes""").Groups[1].Value)
+            .Pipe(s => Regex.Match(
+                s,
+                """
+                "label"\s*:\s*"([\d,\.]+) likes"
+                """
+            ).Groups[1].Value)
             .NullIfWhiteSpace()?
             .StripNonDigit()
             .ParseLongOrNull()
@@ -30,7 +44,12 @@ internal partial class VideoWatchPage
         _content
             .Source
             .Text
-            .Pipe(s => Regex.Match(s, @"""label""\s*:\s*""([\d,\.]+) dislikes""").Groups[1].Value)
+            .Pipe(s => Regex.Match(
+                s,
+                """
+                "label"\s*:\s*"([\d,\.]+) dislikes"
+                """
+            ).Groups[1].Value)
             .NullIfWhiteSpace()?
             .StripNonDigit()
             .ParseLongOrNull()

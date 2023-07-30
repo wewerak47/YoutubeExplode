@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,7 +26,7 @@ public class StreamSpecs
         var youtube = new YoutubeClient();
 
         // Act
-        var manifest = await youtube.Videos.Streams.GetManifestAsync(VideoIds.ContainsHighQualityStreams);
+        var manifest = await youtube.Videos.Streams.GetManifestAsync(VideoIds.WithHighQualityStreams);
 
         // Assert
         manifest.Streams.Should().NotBeEmpty();
@@ -59,14 +60,14 @@ public class StreamSpecs
     [Theory]
     [InlineData(VideoIds.Normal)]
     [InlineData(VideoIds.Unlisted)]
-    [InlineData(VideoIds.LiveStreamRecording)]
-    [InlineData(VideoIds.Omnidirectional)]
-    [InlineData(VideoIds.HighDynamicRange)]
-    [InlineData(VideoIds.EmbedRestrictedByAuthor)]
     [InlineData(VideoIds.EmbedRestrictedByYouTube)]
+    [InlineData(VideoIds.EmbedRestrictedByAuthor)]
     [InlineData(VideoIds.AgeRestrictedViolent)]
     [InlineData(VideoIds.AgeRestrictedSexual)]
     [InlineData(VideoIds.AgeRestrictedEmbedRestricted)]
+    [InlineData(VideoIds.LiveStreamRecording)]
+    [InlineData(VideoIds.WithOmnidirectionalStreams)]
+    [InlineData(VideoIds.WithHighDynamicRangeStreams)]
     public async Task I_can_get_the_list_of_available_streams_on_any_playable_video(string videoId)
     {
         // Arrange
@@ -79,7 +80,7 @@ public class StreamSpecs
         manifest.Streams.Should().NotBeEmpty();
     }
 
-    [Fact]
+    [Fact(Skip = "Preview video ID is not always available")]
     public async Task I_cannot_get_the_list_of_available_streams_on_a_paid_video()
     {
         // Arrange
@@ -117,7 +118,7 @@ public class StreamSpecs
 
         // Act & assert
         var ex = await Assert.ThrowsAsync<VideoUnavailableException>(async () =>
-            await youtube.Videos.Streams.GetManifestAsync(VideoIds.NonExisting)
+            await youtube.Videos.Streams.GetManifestAsync(VideoIds.Deleted)
         );
 
         _testOutput.WriteLine(ex.Message);
@@ -128,11 +129,11 @@ public class StreamSpecs
     [InlineData(VideoIds.AgeRestrictedViolent)]
     [InlineData(VideoIds.AgeRestrictedSexual)]
     [InlineData(VideoIds.LiveStreamRecording)]
-    [InlineData(VideoIds.Omnidirectional)]
+    [InlineData(VideoIds.WithOmnidirectionalStreams)]
     public async Task I_can_get_a_specific_stream_from_a_video(string videoId)
     {
         // Arrange
-        var buffer = new byte[1024];
+        using var buffer = MemoryPool<byte>.Shared.Rent(1024);
         var youtube = new YoutubeClient();
 
         // Act
@@ -141,7 +142,7 @@ public class StreamSpecs
         foreach (var streamInfo in manifest.Streams)
         {
             await using var stream = await youtube.Videos.Streams.GetAsync(streamInfo);
-            var bytesRead = await stream.ReadAsync(buffer);
+            var bytesRead = await stream.ReadAsync(buffer.Memory);
 
             // Assert
             bytesRead.Should().BeGreaterThan(0);
@@ -151,13 +152,13 @@ public class StreamSpecs
     [Theory]
     [InlineData(VideoIds.Normal)]
     [InlineData(VideoIds.Unlisted)]
-    [InlineData(VideoIds.LiveStreamRecording)]
-    [InlineData(VideoIds.Omnidirectional)]
-    [InlineData(VideoIds.EmbedRestrictedByAuthor)]
     [InlineData(VideoIds.EmbedRestrictedByYouTube)]
+    [InlineData(VideoIds.EmbedRestrictedByAuthor)]
     [InlineData(VideoIds.AgeRestrictedViolent)]
     [InlineData(VideoIds.AgeRestrictedSexual)]
     [InlineData(VideoIds.AgeRestrictedEmbedRestricted)]
+    [InlineData(VideoIds.LiveStreamRecording)]
+    [InlineData(VideoIds.WithOmnidirectionalStreams)]
     public async Task I_can_download_a_specific_stream_from_a_video(string videoId)
     {
         // Arrange
@@ -234,7 +235,7 @@ public class StreamSpecs
     }
 
     [Fact]
-    public async Task I_can_get_HTTP_live_stream_URL_from_a_video()
+    public async Task I_can_get_the_HTTP_live_stream_URL_from_a_video()
     {
         // Arrange
         var youtube = new YoutubeClient();
@@ -247,7 +248,7 @@ public class StreamSpecs
     }
 
     [Fact]
-    public async Task I_cannot_get_HTTP_live_stream_URL_from_an_unplayable_video()
+    public async Task I_cannot_get_the_HTTP_live_stream_URL_from_an_unplayable_video()
     {
         // Arrange
         var youtube = new YoutubeClient();
@@ -261,7 +262,7 @@ public class StreamSpecs
     }
 
     [Fact]
-    public async Task I_cannot_get_HTTP_live_stream_URL_from_a_non_live_video()
+    public async Task I_cannot_get_the_HTTP_live_stream_URL_from_a_non_live_video()
     {
         // Arrange
         var youtube = new YoutubeClient();

@@ -17,7 +17,7 @@ public class VideoSpecs
         _testOutput = testOutput;
 
     [Fact]
-    public async Task I_can_get_metadata_of_a_video()
+    public async Task I_can_get_the_metadata_of_a_video()
     {
         // Arrange
         var youtube = new YoutubeClient();
@@ -48,7 +48,7 @@ public class VideoSpecs
     }
 
     [Fact]
-    public async Task I_cannot_get_metadata_of_a_private_video()
+    public async Task I_cannot_get_the_metadata_of_a_private_video()
     {
         // Arrange
         var youtube = new YoutubeClient();
@@ -62,14 +62,14 @@ public class VideoSpecs
     }
 
     [Fact]
-    public async Task I_cannot_get_metadata_of_a_non_existing_video()
+    public async Task I_cannot_get_the_metadata_of_a_non_existing_video()
     {
         // Arrange
         var youtube = new YoutubeClient();
 
         // Act & assert
         var ex = await Assert.ThrowsAsync<VideoUnavailableException>(async () =>
-            await youtube.Videos.GetAsync(VideoIds.NonExisting)
+            await youtube.Videos.GetAsync(VideoIds.Deleted)
         );
 
         _testOutput.WriteLine(ex.Message);
@@ -78,11 +78,12 @@ public class VideoSpecs
     [Theory]
     [InlineData(VideoIds.Normal)]
     [InlineData(VideoIds.Unlisted)]
-    [InlineData(VideoIds.EmbedRestrictedByAuthor)]
     [InlineData(VideoIds.EmbedRestrictedByYouTube)]
+    [InlineData(VideoIds.EmbedRestrictedByAuthor)]
     [InlineData(VideoIds.AgeRestrictedViolent)]
     [InlineData(VideoIds.AgeRestrictedEmbedRestricted)]
-    public async Task I_can_get_metadata_of_any_available_video(string videoId)
+    [InlineData(VideoIds.WithBrokenTitle)]
+    public async Task I_can_get_the_metadata_of_any_available_video(string videoId)
     {
         // Arrange
         var youtube = new YoutubeClient();
@@ -93,7 +94,7 @@ public class VideoSpecs
         // Assert
         video.Id.Value.Should().Be(videoId);
         video.Url.Should().NotBeNullOrWhiteSpace();
-        video.Title.Should().NotBeNullOrWhiteSpace();
+        video.Title.Should().NotBeNull(); // empty titles are allowed
         video.Author.ChannelId.Value.Should().NotBeNullOrWhiteSpace();
         video.Author.ChannelUrl.Should().NotBeNullOrWhiteSpace();
         video.Author.ChannelTitle.Should().NotBeNullOrWhiteSpace();
